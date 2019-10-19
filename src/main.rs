@@ -1,19 +1,16 @@
 use std::env;
 
-fn reg_match(regexp: &[u8], mut text: &[u8]) -> bool {
+fn reg_match(regexp: &[u8], text: &[u8]) -> bool {
     if let Some(&b'^') = regexp.get(0) {
         return reg_matchhere(&regexp[1..], text);
     }
-    loop {
+    for i in 0..text.len() + 1 {
+        let text = &text[i..];
         if reg_matchhere(regexp, text) {
             return true;
         }
-        if text.is_empty() {
-            break;
-        }
-        text = &text[1..];
     }
-    return false;
+    false
 }
 
 fn reg_matchhere(regexp: &[u8], text: &[u8]) -> bool {
@@ -31,15 +28,15 @@ fn reg_matchhere(regexp: &[u8], text: &[u8]) -> bool {
     false
 }
 
-fn reg_matchstar(c: u8, regexp: &[u8], mut text: &[u8]) -> bool {
-    loop {
+fn reg_matchstar(c: u8, regexp: &[u8], text: &[u8]) -> bool {
+    for i in 0..text.len() + 1 {
+        let text = &text[i..];
         if reg_matchhere(regexp, text) {
             return true;
         }
-        if text.is_empty() || text[0] != c && c != b'.' {
+        if !text.is_empty() && text[0] != c && c != b'.' {
             break;
         }
-        text = &text[1..];
     }
     false
 }
@@ -74,6 +71,8 @@ mod tests {
         assert!(reg_match(b"...", b"abc"));
         assert!(reg_match(b".*", b"abc"));
         assert!(reg_match(b".*", b""));
+        assert!(reg_match(b"^.*$", b"a"));
+        assert!(reg_match(b"^.*$", b""));
         assert!(reg_match(b"ab*c", b"abbc"));
         assert!(reg_match(b"ab*c", b"ac"));
         assert!(reg_match(b"^$", b""));
