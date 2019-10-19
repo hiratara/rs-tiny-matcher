@@ -1,17 +1,14 @@
 use std::env;
 
-fn match_(regexp: &[u8], mut text: &[u8]) -> bool {
-    let opt_cs0 = regexp.get(0);
-    if let Some(&c) = opt_cs0 {
-        if c == b'^' {
-            return matchhere(&regexp[1..], text);
-        }
+fn reg_match(regexp: &[u8], mut text: &[u8]) -> bool {
+    if let Some(&b'^') = regexp.get(0) {
+        return reg_matchhere(&regexp[1..], text);
     }
     loop {
-        if matchhere(regexp, text) {
+        if reg_matchhere(regexp, text) {
             return true;
         }
-        if text.len() <= 1 {
+        if text.is_empty() {
             break;
         }
         text = &text[1..];
@@ -19,28 +16,24 @@ fn match_(regexp: &[u8], mut text: &[u8]) -> bool {
     return false;
 }
 
-fn matchhere(regexp: &[u8], text: &[u8]) -> bool {
+fn reg_matchhere(regexp: &[u8], text: &[u8]) -> bool {
     if regexp.is_empty() {
         return true;
     }
-    let cs0 = regexp[0];
-    let opt_cs1 = regexp.get(1);
-    if let Some(&c) = opt_cs1 {
-        if c == b'*' {
-            return matchstar(cs0, &regexp[2..], text);
-        }
-    } else if cs0 == b'$' {
+    if let Some(&b'*') = regexp.get(1) {
+        return reg_matchstar(regexp[0], &regexp[2..], text);
+    } else if regexp[0] == b'$' {
         return text.is_empty();
     }
-    if !text.is_empty() && (cs0 == b'.' || cs0 == text[0]) {
-        return matchhere(&regexp[1..], &text[1..]);
+    if !text.is_empty() && (regexp[0] == b'.' || regexp[0] == text[0]) {
+        return reg_matchhere(&regexp[1..], &text[1..]);
     }
     false
 }
 
-fn matchstar(c: u8, regexp: &[u8], mut text: &[u8]) -> bool {
+fn reg_matchstar(c: u8, regexp: &[u8], mut text: &[u8]) -> bool {
     loop {
-        if matchhere(regexp, text) {
+        if reg_matchhere(regexp, text) {
             return true;
         }
         if text.is_empty() || text[0] != c && c != b'.' {
@@ -59,7 +52,7 @@ fn main() {
 
     println!(
         "{}",
-        if match_(regex.as_bytes(), text.as_bytes()) {
+        if reg_match(regex.as_bytes(), text.as_bytes()) {
             "matched"
         } else {
             "unmatched"
@@ -73,41 +66,41 @@ mod tests {
 
     #[test]
     fn test_match_() {
-        assert!(match_(b"abc", b"abc"));
-        assert!(match_(b"abc", b"_abc_"));
-        assert!(match_(b"abc$", b"_abc"));
-        assert!(match_(b"^abc", b"abc_"));
-        assert!(match_(b"^abc$", b"abc"));
-        assert!(match_(b"...", b"abc"));
-        assert!(match_(b".*", b"abc"));
-        assert!(match_(b".*", b""));
-        assert!(match_(b"ab*c", b"abbc"));
-        assert!(match_(b"ab*c", b"ac"));
-        assert!(match_(b"^$", b""));
-        assert!(match_(b"", b""));
-        assert!(match_(b"", b"b"));
+        assert!(reg_match(b"abc", b"abc"));
+        assert!(reg_match(b"abc", b"_abc_"));
+        assert!(reg_match(b"abc$", b"_abc"));
+        assert!(reg_match(b"^abc", b"abc_"));
+        assert!(reg_match(b"^abc$", b"abc"));
+        assert!(reg_match(b"...", b"abc"));
+        assert!(reg_match(b".*", b"abc"));
+        assert!(reg_match(b".*", b""));
+        assert!(reg_match(b"ab*c", b"abbc"));
+        assert!(reg_match(b"ab*c", b"ac"));
+        assert!(reg_match(b"^$", b""));
+        assert!(reg_match(b"", b""));
+        assert!(reg_match(b"", b"b"));
 
-        assert!(!match_(b"abc", b"b"));
-        assert!(!match_(b"abc", b"cbcab"));
-        assert!(!match_(b"abc", b""));
-        assert!(!match_(b"abc$", b"abc$"));
-        assert!(!match_(b"abc$", b""));
-        assert!(!match_(b"^abc", b"^abc"));
-        assert!(!match_(b"^abc", b""));
-        assert!(!match_(b"^abc$", b"^abc$"));
-        assert!(!match_(b"^abc$", b""));
-        assert!(!match_(b"...", b"bc"));
-        assert!(!match_(b"...", b""));
-        assert!(!match_(b"ab*c", b"adc"));
-        assert!(!match_(b"ab*c", b"bbb"));
-        assert!(!match_(b"ab*c", b"a"));
-        assert!(!match_(b"ab*c", b"ab*c"));
-        assert!(!match_(b"ab*c", b""));
-        assert!(!match_(b"^$", b"a"));
+        assert!(!reg_match(b"abc", b"b"));
+        assert!(!reg_match(b"abc", b"cbcab"));
+        assert!(!reg_match(b"abc", b""));
+        assert!(!reg_match(b"abc$", b"abc$"));
+        assert!(!reg_match(b"abc$", b""));
+        assert!(!reg_match(b"^abc", b"^abc"));
+        assert!(!reg_match(b"^abc", b""));
+        assert!(!reg_match(b"^abc$", b"^abc$"));
+        assert!(!reg_match(b"^abc$", b""));
+        assert!(!reg_match(b"...", b"bc"));
+        assert!(!reg_match(b"...", b""));
+        assert!(!reg_match(b"ab*c", b"adc"));
+        assert!(!reg_match(b"ab*c", b"bbb"));
+        assert!(!reg_match(b"ab*c", b"a"));
+        assert!(!reg_match(b"ab*c", b"ab*c"));
+        assert!(!reg_match(b"ab*c", b""));
+        assert!(!reg_match(b"^$", b"a"));
 
         // invalid regexes
-        assert!(match_(b"*", b"*"));
-        assert!(match_(b"a^", b"a^"));
-        assert!(match_(b"$a", b"$a"));
+        assert!(reg_match(b"*", b"*"));
+        assert!(reg_match(b"a^", b"a^"));
+        assert!(reg_match(b"$a", b"$a"));
     }
 }
